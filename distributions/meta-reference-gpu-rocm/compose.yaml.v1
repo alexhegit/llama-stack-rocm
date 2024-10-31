@@ -1,0 +1,34 @@
+services:
+  llamastack:
+    image: rocm/pytorch 
+    network_mode: "host"
+    volumes:
+      - ~/.llama:/root/.llama
+      - ./run.yaml:/root/my-run.yaml
+    ports:
+      - "5000:5000"
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    security_opt:
+      - seccomp:unconfined
+    group_add:
+      - video
+    environment:
+      - HIP_VISIBLE_DEVICES=0
+    command: []
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: amd 
+            count: 1
+            capabilities: [gpu]
+    runtime: rocm 
+    entrypoint: bash -c "python -m llama_stack.distribution.server.server --yaml_config /root/my-run.yaml"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 3s
+        max_attempts: 5
+        window: 60s
